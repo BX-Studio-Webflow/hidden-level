@@ -6,6 +6,7 @@ const acceptedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173", // Vite default port
   "https://hidden-level-bx.webflow.io",
+  "https://www.hiddenlevel.com",
 ];
 
 export function middleware(request: NextRequest) {

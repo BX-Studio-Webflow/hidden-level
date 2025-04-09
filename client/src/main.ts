@@ -1,7 +1,7 @@
 import { Opening } from "../../types/opening";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const BASE_URL = "https://hidden-level.vercel.app";
+  const BASE_URL = "https://hidden-level-nine.vercel.app";
   const loader = document.querySelector<HTMLElement>("[dev-target=loader]");
   const rolesWrapper = document.querySelector<HTMLElement>(
     "[dev-target=roles-wrapper]"
