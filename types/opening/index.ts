@@ -6,5 +6,6 @@ export interface Opening {
     codeValue: string;
     countryCode: string;
     workerTypeCode: string;
+    expireDate: string;
   }[];
 }

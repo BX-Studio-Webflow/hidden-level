@@ -86,12 +86,14 @@ async function getAccessToken(httpsAgent: https.Agent): Promise<string> {
 
 function restructureOpenings(openings: Requisition) {
   const jobMap: Opening = {};
+  const currentDate = new Date();
 
   openings.jobRequisitions.forEach((jobRequisition) => {
     const department =
       jobRequisition.organizationalUnits[0].nameCode.shortName ?? "Others";
     const openingLink = jobRequisition.links[1].href;
     const jobTitle = jobRequisition.postingInstructions[0].nameCode.codeValue;
+    const expireDate = jobRequisition.postingInstructions[0].expireDate;
     const cityName = jobRequisition.requisitionLocations[0].address.cityName;
     const codeValue =
       jobRequisition.requisitionLocations[0].address.countrySubdivisionLevel1
@@ -99,6 +101,11 @@ function restructureOpenings(openings: Requisition) {
     const countryCode =
       jobRequisition.requisitionLocations[0].address.countryCode;
     const workerTypeCode = jobRequisition.workerTypeCode?.shortName ?? "";
+
+    // Filter out expired openings
+    if (expireDate && new Date(expireDate) < currentDate) {
+      return; // Skip this opening as it has expired
+    }
 
     if (!jobMap[department]) {
       jobMap[department] = [];
@@ -111,6 +118,7 @@ function restructureOpenings(openings: Requisition) {
       codeValue,
       countryCode,
       workerTypeCode,
+      expireDate,
     });
   });
   return jobMap;
