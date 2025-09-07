@@ -17,6 +17,7 @@ export async function GET(request: Request) {
         "$filter",
         "requisitionStatusCode/codeValue eq ON"
       );
+      endpoint.searchParams.set("$top", "20");
 
       const cert = process.env.CERT_PEM;
       const key = process.env.KEY_PEM;
@@ -31,15 +32,39 @@ export async function GET(request: Request) {
       // Obtain OAuth2 token
       const token = await getAccessToken(httpsAgent);
 
-      // Make request to ADP API
-      const adpResponse: AxiosResponse = await axios.get(endpoint.href, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        httpsAgent,
-      });
+      let allRequisitions: Requisition["jobRequisitions"] = [];
+      let skip = 0;
+      let totalNumber = 0;
 
-      return adpResponse.data as Requisition;
+      do {
+        // Set skip parameter for current batch
+        endpoint.searchParams.set("$skip", skip.toString());
+
+        // Make request to ADP API
+        const adpResponse: AxiosResponse = await axios.get(endpoint.href, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          httpsAgent,
+        });
+
+        const batchData = adpResponse.data as Requisition;
+
+        // Add current batch to all requisitions
+        allRequisitions = [...allRequisitions, ...batchData.jobRequisitions];
+
+        // Update total number from meta (should be consistent across batches)
+        totalNumber = batchData.meta.totalNumber;
+
+        // Increment skip for next batch
+        skip += 20;
+      } while (skip < totalNumber);
+
+      // Return consolidated data with all requisitions
+      return {
+        jobRequisitions: allRequisitions,
+        meta: { totalNumber },
+      } as Requisition;
     },
     ["job-requisitions"], // Cache tag
     {
@@ -91,7 +116,10 @@ function restructureOpenings(openings: Requisition) {
   openings.jobRequisitions.forEach((jobRequisition) => {
     const department =
       jobRequisition.organizationalUnits[0].nameCode.shortName ?? "Others";
-    const openingLink = jobRequisition.links[1].href;
+    const openingLink =
+      jobRequisition.links.find(
+        (link) => link.title === "HL External Career Center"
+      )?.href ?? "";
     const jobTitle = jobRequisition.postingInstructions[0].nameCode.codeValue;
     const expireDate = jobRequisition.postingInstructions[0].expireDate;
     const cityName = jobRequisition.requisitionLocations[0].address.cityName;
