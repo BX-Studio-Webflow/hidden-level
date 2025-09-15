@@ -116,6 +116,7 @@ function restructureOpenings(openings: Requisition) {
   openings.jobRequisitions.forEach((jobRequisition) => {
     const department =
       jobRequisition.organizationalUnits[0].nameCode.shortName ?? "Others";
+    if (department === "All") return;
     const openingLink =
       jobRequisition.links.find(
         (link) => link.title === "HL External Career Center"
